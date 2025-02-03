@@ -28,6 +28,10 @@ chmod +x HardeningLive.sh
 ```sh
 chmod +x fail2ban.sh
 ```
+## Executando
+```sh
+./HardeningLive.sh
+```
 
 ## Funcionalidades
 
