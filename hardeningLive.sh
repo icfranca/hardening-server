@@ -12,6 +12,8 @@ funcao_updatepkg(){
     echo "Atualizando pacotes do sistema..."
     sleep 1
     sudo apt update && sudo apt upgrade -y
+    clear
+    funcao_menu
 }
 
 funcao_createuser (){
@@ -23,12 +25,17 @@ funcao_createuser (){
     echo "Adicionando $usuario ao grupo sudo..."
     sleep 1
     sudo usermod -aG sudo $usuario
+    clear
+    funcao_menu
 }
+
 funcao_disallowrootssh(){
     # 3. Desativar login root via SSH
     echo "Desativando login root via SSH..."
     sleep 1
     sudo sed -i 's/PermitRootLogin yes/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+    clear
+    funcao_menu
 }
 
 funcao_disablepassssh(){
@@ -36,6 +43,8 @@ funcao_disablepassssh(){
     echo "Desativando autenticação por senha para SSH..."
     sleep 1
     sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+    clear
+    funcao_menu
 }
 
 funcao_hardeningssh(){
@@ -66,6 +75,8 @@ funcao_hardeningssh(){
 
     # Limitar tentativas de login SSH para mitigar ataques de força bruta
     echo "MaxAuthTries 3" | sudo tee -a /etc/ssh/sshd_config
+    clear
+    funcao_menu
 }
 
 funcao_sshport(){
@@ -78,6 +89,8 @@ funcao_sshport(){
         echo "Alterando a porta SSH para $SSH_PORT..."
         sleep 1
         sudo sed -i "s/#Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
+           clear
+        funcao_menu
 
     else
         echo "O serviço SSH já está instalado."
@@ -85,6 +98,8 @@ funcao_sshport(){
          echo "Alterando a porta SSH para $SSH_PORT..."
         sleep 1
         sudo sed -i "s/#Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
+        clear
+        funcao_menu
     fi
 }
 
@@ -102,6 +117,9 @@ funcao_ufw(){
     sudo ufw allow 2222/tcp
     # Ativar o firewall
     sudo ufw enable
+
+    clear
+    funcao_menu
 }
 
 funcao_fail2ban(){
@@ -109,6 +127,8 @@ funcao_fail2ban(){
     echo "Esta instalação rodará um script e finalizará a execução do script atual."
     sleep 1
     ./fail2ban.sh
+    clear
+    funcao_menu
 }
 
 funcao_securepasswd(){
@@ -116,6 +136,8 @@ funcao_securepasswd(){
     echo "Definindo permissões seguras em /etc/passwd e /etc/shadow..."
     sudo chmod 644 /etc/passwd
     sudo chmod 600 /etc/shadow
+    clear
+    funcao_menu
 }
 
 funcao_autoupdate(){  
@@ -123,6 +145,8 @@ funcao_autoupdate(){
     echo "Ativando atualizações automáticas de segurança..."
     sudo apt install unattended-upgrades -y
     sudo dpkg-reconfigure -plow unattended-upgrades
+    clear
+    funcao_menu
 }
 
 funcao_strongpasswd(){
@@ -130,7 +154,10 @@ funcao_strongpasswd(){
     echo "Configurando políticas de senha fortes..."
     sudo apt install libpam-pwquality -y
     echo "password requisite pam_pwquality.so retry=3 minlen=12 difok=3" | sudo tee -a /etc/pam.d/common-password
+    clear
+    funcao_menu
 }
+
 fucao_restardsshfw(){
     # 12. Recarregar SSH e UFW
     echo "Recarregando serviços SSH e UFW..."
@@ -138,8 +165,11 @@ fucao_restardsshfw(){
     sudo ufw reload
     echo "Serviços recarregados com sucesso!"
     sleep 1
+    clear
+    funcao_menu
 }
 
+funcao_menu (){
 # Menu
 
 echo "Escolha uma opção:"
@@ -199,3 +229,4 @@ case $opcao in
         echo "Opção inválida. Saindo..."
         ;;
 esac
+}
