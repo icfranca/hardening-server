@@ -22,7 +22,7 @@ git clone https://github.com/Cyberbessa/script-live.git
 Dentro do diretório onde estãos arquivos baixados dê permissão de execução aos scripts.
 
 ```sh
-gchmod +x HardeningLive.sh
+chmod +x HardeningLive.sh
 ```
 
 ```sh
