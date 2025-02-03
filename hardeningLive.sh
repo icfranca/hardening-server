@@ -5,9 +5,6 @@
 # Grupo no Telegram: https://t.me/+91kR4N_li005M2Nh
 # Forked from: Israel Cavalcante @icfranca
 
-usuario=$1
-$usuario
-
 #Funções
 
 funcao_updatepkg(){
@@ -21,6 +18,7 @@ funcao_createuser (){
     # 2. Adicionar um novo usuário e incluir no grupo sudo
     echo "Criando um novo usuário $usuario..."
     sleep 1
+    read -p "Digite o nome do usuário: " usuario
     sudo adduser $usuario --gecos "Primeiro Último,NúmeroSala,TelefoneTrabalho,TelefoneCasa" --disabled-password
     echo "Adicionando $usuario ao grupo sudo..."
     sleep 1
