@@ -3,97 +3,214 @@
 # LinkedIn: linkedin.com/in/cyberbessa
 # YouTube: youtube.com/@cyberbessa
 # Grupo no Telegram: https://t.me/+91kR4N_li005M2Nh
+# Forked from: Israel Cavalcante @icfranca
 
 usuario=$1
 $usuario
 
-echo "Iniciando o hardening aprimorado para Ubuntu 24.04..."
+#Funções
 
-# 1. Atualizar pacotes do sistema
-echo "Atualizando pacotes do sistema..."
-sudo apt update && sudo apt upgrade -y
+funcao_updatepkg(){
+    # 1. Atualizar pacotes do sistema
+    echo "Atualizando pacotes do sistema..."
+    sleep 1
+    sudo apt update && sudo apt upgrade -y
+}
 
-# 2. Adicionar um novo usuário e incluir no grupo sudo
-echo "Criando um novo usuário $usuario..."
-sudo adduser $usuario --gecos "Primeiro Último,NúmeroSala,TelefoneTrabalho,TelefoneCasa" --disabled-password
-echo "Adicionando $usuario ao grupo sudo..."
-sudo usermod -aG sudo $usuario
+funcao_createuser (){
+    # 2. Adicionar um novo usuário e incluir no grupo sudo
+    echo "Criando um novo usuário $usuario..."
+    sleep 1
+    sudo adduser $usuario --gecos "Primeiro Último,NúmeroSala,TelefoneTrabalho,TelefoneCasa" --disabled-password
+    echo "Adicionando $usuario ao grupo sudo..."
+    sleep 1
+    sudo usermod -aG sudo $usuario
+}
+funcao_disallowrootssh(){
+    # 3. Desativar login root via SSH
+    echo "Desativando login root via SSH..."
+    sleep 1
+    sudo sed -i 's/PermitRootLogin yes/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+}
 
-# 3. Desativar login root via SSH
-echo "Desativando login root via SSH..."
-sudo sed -i 's/PermitRootLogin yes/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+funcao_disablepassssh(){
+    # 4. Desativar autenticação por senha para SSH (permitir apenas chaves SSH)
+    echo "Desativando autenticação por senha para SSH..."
+    sleep 1
+    sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+}
 
-# 4. Desativar autenticação por senha para SSH (permitir apenas chaves SSH)
-#echo "Desativando autenticação por senha para SSH..."
-#sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+funcao_hardeningssh(){
+    # 5. Hardening adicional do SSH
+    echo "Aplicando hardening adicional no SSH..."
+    sleep 1
 
-# 5. Hardening adicional do SSH
-echo "Aplicando hardening adicional no SSH..."
-# Desativar encaminhamento X11
-sudo sed -i 's/#X11Forwarding yes/X11Forwarding no/' /etc/ssh/sshd_config
-# Desativar senhas vazias
-sudo sed -i 's/#PermitEmptyPasswords yes/PermitEmptyPasswords no/' /etc/ssh/sshd_config
-# Desativar encaminhamento TCP
-echo "AllowTcpForwarding no" | sudo tee -a /etc/ssh/sshd_config
-# Limitar tentativas de login SSH para mitigar ataques de força bruta
-echo "MaxAuthTries 3" | sudo tee -a /etc/ssh/sshd_config
+    # Desativar encaminhamento X11
+    sudo sed -i 's/#X11Forwarding yes/X11Forwarding no/' /etc/ssh/sshd_config
 
-# 6. Alterar a porta SSH (opcional, recomendado usar uma porta não padrão)
-SSH_PORT=2222
-echo "Alterando a porta SSH para $SSH_PORT..."
-sudo sed -i "s/#Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
+    # Desativar senhas vazias
+    sudo sed -i 's/#PermitEmptyPasswords yes/PermitEmptyPasswords no/' /etc/ssh/sshd_config
 
-# 7. Ativar o UFW (Uncomplicated Firewall)
-echo "Ativando o UFW e configurando regras básicas de firewall..."
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
+    # Desativar encaminhamento TCP
+    echo "AllowTcpForwarding no" | sudo tee -a /etc/ssh/sshd_config
 
-# Permitir SSH na nova porta
-sudo ufw allow $SSH_PORT/tcp
+    # Limitar tentativas de login SSH para mitigar ataques de força bruta
+    echo "MaxAuthTries 3" | sudo tee -a /etc/ssh/sshd_config
 
-# Permitir HTTP, HTTPS e SSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 2222/tcp
+    # Desativar encaminhamento X11
+    sudo sed -i 's/#X11Forwarding yes/X11Forwarding no/' /etc/ssh/sshd_config
 
-# Ativar o firewall
-sudo ufw enable
+    # Desativar senhas vazias
+    sudo sed -i 's/#PermitEmptyPasswords yes/PermitEmptyPasswords no/' /etc/ssh/sshd_config
 
-# 8. Instalar e configurar Fail2Ban para proteção SSH
-echo "Instalando e configurando Fail2Ban..."
-sudo apt install fail2ban -y
+    # Desativar encaminhamento TCP
+    echo "AllowTcpForwarding no" | sudo tee -a /etc/ssh/sshd_config
 
-# Configurar Fail2Ban para proteção SSH
-sudo tee /etc/fail2ban/jail.local > /dev/null <<EOL
-[sshd]
-enabled = true
-port = $SSH_PORT
-logpath = %(sshd_log)s
-maxretry = 3
-bantime = 3600
-EOL
+    # Limitar tentativas de login SSH para mitigar ataques de força bruta
+    echo "MaxAuthTries 3" | sudo tee -a /etc/ssh/sshd_config
+}
 
-# Reiniciar Fail2Ban para aplicar a configuração
-sudo systemctl restart fail2ban
+funcao_sshport(){
+    # 6. Alterar a porta SSH (opcional, recomendado usar uma porta não padrão)
+    if ! command -v sshd &> /dev/null
+    then
+        echo "O serviço SSH não está instalado. Instalando o OpenSSH Server..."
+        sudo apt install openssh-server -y
+        SSH_PORT=2222
+        echo "Alterando a porta SSH para $SSH_PORT..."
+        sleep 1
+        sudo sed -i "s/#Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
 
-# 9. Definir permissões em /etc/passwd e /etc/shadow
-echo "Definindo permissões seguras em /etc/passwd e /etc/shadow..."
-sudo chmod 644 /etc/passwd
-sudo chmod 600 /etc/shadow
+    else
+        echo "O serviço SSH já está instalado."
+       SSH_PORT=2222
+         echo "Alterando a porta SSH para $SSH_PORT..."
+        sleep 1
+        sudo sed -i "s/#Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
+    fi
+}
 
-# 10. Configurar atualizações automáticas de segurança
-echo "Ativando atualizações automáticas de segurança..."
-sudo apt install unattended-upgrades -y
-sudo dpkg-reconfigure -plow unattended-upgrades
+funcao_ufw(){
+    # 7. Ativar o UFW (Uncomplicated Firewall)
+    echo "Ativando o UFW e configurando regras básicas de firewall..."
+    sleep 1
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    # Permitir SSH na nova porta
+    sudo ufw allow $SSH_PORT/tcp
+    # Permitir HTTP, HTTPS e SSH
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw allow 2222/tcp
+    # Ativar o firewall
+    sudo ufw enable
+}
 
-# 11. Configurar políticas de senha fortes
-echo "Configurando políticas de senha fortes..."
-sudo apt install libpam-pwquality -y
-echo "password requisite pam_pwquality.so retry=3 minlen=12 difok=3" | sudo tee -a /etc/pam.d/common-password
+funcao_fail2ban(){
+    # 8. Instalar e configurar Fail2Ban para proteção SSH
+    echo "Instalando e configurando Fail2Ban..."
+    sleep 1
+    sudo apt install fail2ban -y
 
-# 12. Recarregar SSH e UFW
-echo "Recarregando serviços SSH e UFW..."
-sudo systemctl reload sshd
-sudo ufw reload
+    # Configurar Fail2Ban para proteção SSH
+    sudo tee /etc/fail2ban/jail.local > /dev/null <<EOL
+    [sshd]
+    enabled = true
+    port = $SSH_PORT
+    logpath = %(sshd_log)s
+    maxretry = 3
+    bantime = 3600
+    EOL
 
-echo "Hardening aprimorado concluído com sucesso!"
+    # Reiniciar Fail2Ban para aplicar a configuração
+    sudo systemctl restart fail2ban
+}
+
+funcao_securepasswd(){
+    # 9. Definir permissões em /etc/passwd e /etc/shadow
+    echo "Definindo permissões seguras em /etc/passwd e /etc/shadow..."
+    sudo chmod 644 /etc/passwd
+    sudo chmod 600 /etc/shadow
+}
+
+funcao_autoupdate(){  
+    # 10. Configurar atualizações automáticas de segurança
+    echo "Ativando atualizações automáticas de segurança..."
+    sudo apt install unattended-upgrades -y
+    sudo dpkg-reconfigure -plow unattended-upgrades
+}
+
+funcao_strongpasswd(){
+    # 11. Configurar políticas de senha fortes
+    echo "Configurando políticas de senha fortes..."
+    sudo apt install libpam-pwquality -y
+    echo "password requisite pam_pwquality.so retry=3 minlen=12 difok=3" | sudo tee -a /etc/pam.d/common-password
+}
+fucao_restardsshfw(){
+    # 12. Recarregar SSH e UFW
+    echo "Recarregando serviços SSH e UFW..."
+    sudo systemctl reload sshd
+    sudo ufw reload
+    echo "Serviços recarregados com sucesso!"
+    sleep 1
+}
+
+# Menu
+
+echo "Escolha uma opção:"
+echo "1. Atualizar pacotes do sistema"
+echo "2. Adicionar um novo usuário e incluir no grupo sudo"
+echo "3. Desativar login root via SSH"
+echo "4. Desativar autenticação por senha para SSH (permitir apenas chaves SSH)"
+echo "5. Hardening adicional do SSH"
+echo "6. Alterar a porta SSH (opcional, recomendado usar uma porta não padrão)"
+echo "7. Ativar o UFW (Uncomplicated Firewall)"
+echo "8. Instalar e configurar Fail2Ban para proteção SSH"
+echo "9. Definir permissões em /etc/passwd e /etc/shadow"
+echo "10. Configurar atualizações automáticas de segurança"
+echo "11. Configurar políticas de senha fortes"
+echo "0. Sair"
+
+read -p "Digite o número da opção desejada: " opcao
+
+case $opcao in
+    1)
+        funcao_updatepkg
+        ;;
+    2)
+        funcao_createuser
+        ;;
+    3)
+        funcao_disallowrootssh
+        ;;
+    4)
+        funcao_disablepassssh
+        ;;
+    5)
+        funcao_hardeningssh
+        ;;
+    6)
+        funcao_sshport
+        ;;
+    7)
+        funcao_ufw
+        ;;
+    8)
+        funcao_fail2ban
+        ;;
+    9)
+        funcao_securepasswd
+        ;;
+    10)
+        funcao_autoupdate
+        ;;
+    11)
+        funcao_strongpasswd
+        ;;
+    0)
+        echo "Saindo..."
+        ;;
+    *)
+        echo "Opção inválida. Saindo..."
+        ;;
+esac
